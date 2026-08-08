@@ -1,0 +1,429 @@
+import express from "express";
+import fetch from "node-fetch";
+import xml2js from "xml2js";
+import { google } from "googleapis";
+
+const app = express();
+
+const PORT = process.env.PORT || 8080;
+
+// ======================================================
+// 설정
+// ======================================================
+
+// Google News RSS
+const GOOGLE_NEWS_RSS =
+  "https://news.google.com/rss?hl=ko&gl=KR&ceid=KR:ko";
+
+// 1분
+const NEWS_INTERVAL = 60 * 1000;
+
+// 한 번에 보낼 뉴스 개수
+const NEWS_PER_MESSAGE = 1;
+
+
+// ======================================================
+// Express
+// ======================================================
+
+app.get("/", (req, res) => {
+  res.send("YouTube Google News Bot is running.");
+});
+
+
+// ======================================================
+// Google 인증
+// ======================================================
+
+let youtube;
+
+try {
+  if (!process.env.YOUTUBE_CLIENT_ID) {
+    throw new Error("YOUTUBE_CLIENT_ID가 없습니다.");
+  }
+
+  if (!process.env.YOUTUBE_CLIENT_SECRET) {
+    throw new Error("YOUTUBE_CLIENT_SECRET이 없습니다.");
+  }
+
+  if (!process.env.YOUTUBE_REFRESH_TOKEN) {
+    throw new Error("YOUTUBE_REFRESH_TOKEN이 없습니다.");
+  }
+
+  const oauth2Client = new google.auth.OAuth2(
+    process.env.YOUTUBE_CLIENT_ID,
+    process.env.YOUTUBE_CLIENT_SECRET,
+    "http://localhost"
+  );
+
+  oauth2Client.setCredentials({
+    refresh_token: process.env.YOUTUBE_REFRESH_TOKEN
+  });
+
+  youtube = google.youtube({
+    version: "v3",
+    auth: oauth2Client
+  });
+
+  console.log("✅ YouTube API 인증 설정 완료");
+
+} catch (error) {
+
+  console.error("❌ YouTube 인증 설정 실패:");
+  console.error(error.message);
+
+}
+
+
+// ======================================================
+// RSS Parser
+// ======================================================
+
+const parser = new xml2js.Parser({
+  explicitArray: false
+});
+
+
+// ======================================================
+// 이미 보낸 뉴스
+// ======================================================
+
+const sentNews = new Set();
+
+
+// 너무 커지지 않도록 오래된 뉴스 정리
+const MAX_SENT_NEWS = 500;
+
+
+// ======================================================
+// Google News 가져오기
+// ======================================================
+
+async function fetchGoogleNews() {
+
+  try {
+
+    const response = await fetch(GOOGLE_NEWS_RSS, {
+      headers: {
+        "User-Agent": "Mozilla/5.0"
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        `Google News RSS 오류: ${response.status}`
+      );
+    }
+
+    const xml = await response.text();
+
+    const result = await parser.parseStringPromise(xml);
+
+    let items = result?.rss?.channel?.item || [];
+
+    if (!Array.isArray(items)) {
+      items = [items];
+    }
+
+    const news = items
+      .filter(item => item && item.title)
+      .map(item => {
+
+        let title = item.title;
+
+        let link = "";
+
+        if (typeof item.link === "string") {
+          link = item.link;
+        } else if (item.link?._) {
+          link = item.link._;
+        }
+
+        // Google News 제목은 보통
+        // "기사 제목 - 언론사"
+        // 형태
+        let source = "";
+
+        if (title.includes(" - ")) {
+
+          const parts = title.split(" - ");
+
+          source = parts.pop().trim();
+
+          title = parts.join(" - ").trim();
+
+        }
+
+        // 뉴스 식별용
+        const id =
+          item.guid ||
+          link ||
+          `${title}|${source}`;
+
+        return {
+          id,
+          title,
+          source,
+          link
+        };
+
+      });
+
+    return news;
+
+  } catch (error) {
+
+    console.error(
+      "❌ Google News 가져오기 실패:",
+      error.message
+    );
+
+    return [];
+
+  }
+
+}
+
+
+// ======================================================
+// Live Chat ID 가져오기
+// ======================================================
+
+async function getLiveChatId() {
+
+  if (!youtube) {
+    throw new Error("YouTube API가 초기화되지 않았습니다.");
+  }
+
+  const response = await youtube.liveBroadcasts.list({
+    part: "snippet",
+    broadcastStatus: "active",
+    broadcastType: "all"
+  });
+
+  const broadcasts = response.data.items || [];
+
+  if (broadcasts.length === 0) {
+    throw new Error("현재 진행 중인 YouTube 라이브가 없습니다.");
+  }
+
+  const liveChatId =
+    broadcasts[0]?.snippet?.liveChatId;
+
+  if (!liveChatId) {
+    throw new Error(
+      "현재 방송의 liveChatId를 찾을 수 없습니다."
+    );
+  }
+
+  return liveChatId;
+
+}
+
+
+// ======================================================
+// YouTube 채팅 메시지 전송
+// ======================================================
+
+async function sendYouTubeChat(message) {
+
+  if (!youtube) {
+    console.error(
+      "❌ YouTube API가 초기화되지 않았습니다."
+    );
+
+    return false;
+  }
+
+  try {
+
+    const liveChatId = await getLiveChatId();
+
+    await youtube.liveChatMessages.insert({
+
+      part: "snippet",
+
+      requestBody: {
+
+        snippet: {
+
+          liveChatId,
+
+          type: "textMessageEvent",
+
+          textMessageDetails: {
+
+            messageText: message
+
+          }
+
+        }
+
+      }
+
+    });
+
+    console.log(
+      `✅ 채팅 전송 성공: ${message}`
+    );
+
+    return true;
+
+  } catch (error) {
+
+    console.error(
+      "❌ YouTube 채팅 전송 실패:"
+    );
+
+    console.error(
+      error?.response?.data?.error?.message ||
+      error.message
+    );
+
+    return false;
+
+  }
+
+}
+
+
+// ======================================================
+// 뉴스 하나 선택
+// ======================================================
+
+function selectNewNews(newsList) {
+
+  for (const news of newsList) {
+
+    if (!sentNews.has(news.id)) {
+
+      return news;
+
+    }
+
+  }
+
+  return null;
+
+}
+
+
+// ======================================================
+// 뉴스 전송
+// ======================================================
+
+async function sendLatestNews() {
+
+  console.log(
+    `\n📰 ${new Date().toLocaleString("ko-KR")} 뉴스 확인`
+  );
+
+  const newsList = await fetchGoogleNews();
+
+  if (newsList.length === 0) {
+
+    console.log("⚠️ 가져온 뉴스가 없습니다.");
+
+    return;
+
+  }
+
+  const news = selectNewNews(newsList);
+
+  if (!news) {
+
+    console.log(
+      "ℹ️ 새로운 뉴스가 없습니다."
+    );
+
+    return;
+
+  }
+
+
+  // 채팅 메시지
+  let message = `📰 ${news.title}`;
+
+  if (news.source) {
+    message += ` [${news.source}]`;
+  }
+
+  // 너무 긴 메시지 방지
+  if (message.length > 450) {
+
+    message =
+      message.substring(0, 447) + "...";
+
+  }
+
+
+  const success =
+    await sendYouTubeChat(message);
+
+
+  if (success) {
+
+    sentNews.add(news.id);
+
+    // 너무 많이 쌓이지 않도록 정리
+    if (sentNews.size > MAX_SENT_NEWS) {
+
+      const first =
+        sentNews.values().next().value;
+
+      sentNews.delete(first);
+
+    }
+
+  }
+
+}
+
+
+// ======================================================
+// 1분마다 실행
+// ======================================================
+
+let newsTimer = null;
+
+function startNewsTimer() {
+
+  if (newsTimer) {
+    clearInterval(newsTimer);
+  }
+
+  console.log(
+    "⏱️ Google News → YouTube 채팅 자동 전송 시작"
+  );
+
+  console.log(
+    "⏱️ 전송 주기: 1분"
+  );
+
+
+  // 서버 시작 후 바로 한 번 확인
+  sendLatestNews();
+
+
+  // 이후 1분마다
+  newsTimer = setInterval(
+    sendLatestNews,
+    NEWS_INTERVAL
+  );
+
+}
+
+
+// ======================================================
+// 서버 시작
+// ======================================================
+
+app.listen(PORT, () => {
+
+  console.log(
+    `\n🚀 Server running on port ${PORT}`
+  );
+
+  startNewsTimer();
+
+});
