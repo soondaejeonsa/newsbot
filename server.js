@@ -145,7 +145,7 @@ const MAX_SENT_NEWS = 500;
 // 뉴스 전송 기록 초기화
 // ======================================================
 
-app.get("/reset-news", (req, res) => {
+app.get("/reset", (req, res) => {
 
   sentNews.clear();
 
