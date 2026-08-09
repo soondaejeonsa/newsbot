@@ -498,27 +498,39 @@ async function findCurrentLive() {
     // --------------------------------------------
     // 새로운 방송
     // --------------------------------------------
-
+    
+    if (currentVideoId !== videoId) {
+    
+      console.log(
+        "🎥 순대전사 새 방송 발견"
+      );
+    
+      console.log(
+        `🎬 Video ID: ${videoId}`
+      );
+    
+      console.log(
+        "💬 Live Chat ID 확인 완료"
+      );
+    
+      // 새 방송이 시작되면
+      // 이전 방송에서 보낸 뉴스 기록 초기화
+      sentNews.clear();
+    
+      console.log(
+        "🔄 새 방송 시작 → 뉴스 전송 기록 초기화"
+      );
+    
+    }
+    
     currentVideoId =
       videoId;
-
+    
     currentLiveChatId =
       liveChatId;
-
+    
     liveActive = true;
-
-    console.log(
-      "🎥 순대전사 새 방송 발견"
-    );
-
-    console.log(
-      `🎬 Video ID: ${videoId}`
-    );
-
-    console.log(
-      "💬 Live Chat ID 확인 완료"
-    );
-
+      
     console.log(
       "🚀 뉴스 자동 전송을 시작합니다."
     );
