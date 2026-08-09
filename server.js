@@ -63,7 +63,7 @@ const NO_LIVE_CHECK_INTERVAL = 15 * 60 * 1000;
 // ======================================================
 
 app.get("/", (req, res) => {
-  res.send("YouTube Google News Bot is running.");
+  res.send(`<meta name="viewport" content="width=device-width, initial-scale=1.0">YouTube Google News Bot is running.`);
 });
 
 // ======================================================
@@ -153,9 +153,7 @@ app.get("/stop", (req, res) => {
     "⏸️ 뉴스 채팅 전송 일시정지"
   );
 
-  res.send(
-    "⏸️ 뉴스 채팅 전송이 일시정지되었습니다."
-  );
+  res.send(`<meta name="viewport" content="width=device-width, initial-scale=1.0">⏸️ 뉴스 채팅 전송이 일시정지되었습니다.`);
 
 });
 
@@ -167,9 +165,7 @@ app.get("/play", (req, res) => {
     "▶️ 뉴스 채팅 전송 재개"
   );
 
-  res.send(
-    "▶️ 뉴스 채팅 전송이 재개되었습니다."
-  );
+  res.send(`<meta name="viewport" content="width=device-width, initial-scale=1.0">▶️ 뉴스 채팅 전송이 재개되었습니다.`);
 
 });
 
@@ -185,9 +181,7 @@ app.get("/reset", (req, res) => {
     "🔄 뉴스 전송 기록 초기화 → 뉴스 처음부터 다시 시작"
   );
 
-  res.send(
-    "✅ 뉴스 전송 기록이 초기화되었습니다."
-  );
+  res.send(`<meta name="viewport" content="width=device-width, initial-scale=1.0">✅ 뉴스 전송 기록이 초기화되었습니다.`);
 
 });
 
