@@ -11,7 +11,7 @@ const PORT = process.env.PORT || 8080;
 // 설정
 // ======================================================
 
-// 쩡햄Live 채널
+// 순대전사 채널
 const TARGET_CHANNEL_ID = "UChqJ-rp_I9NKwZOtzI11jNw";
 
 // Google News RSS
@@ -192,7 +192,7 @@ async function fetchGoogleNews() {
 }
 
 // ======================================================
-// 쩡햄Live의 현재 라이브 찾기
+// 순대전사의 현재 라이브 찾기
 // ======================================================
 
 async function findCurrentLive() {
@@ -206,7 +206,7 @@ async function findCurrentLive() {
   try {
 
     // --------------------------------------------------
-    // 1. 쩡햄Live 채널에서 현재 LIVE 영상 검색
+    // 1. 순대전사 채널에서 현재 LIVE 영상 검색
     // --------------------------------------------------
 
     const searchResponse =
@@ -238,7 +238,7 @@ async function findCurrentLive() {
       ) {
 
         console.log(
-          "ℹ️ 현재 쩡햄Live에서 진행 중인 라이브가 없습니다."
+          "ℹ️ 현재 순대전사에서 진행 중인 라이브가 없습니다."
         );
 
         lastNoLiveLogTime = now;
@@ -295,7 +295,7 @@ async function findCurrentLive() {
     if (currentVideoId !== videoId) {
 
       console.log(
-        `🎥 쩡햄Live 새 방송 발견`
+        `🎥 순대전사 새 방송 발견`
       );
 
       console.log(
@@ -319,7 +319,7 @@ async function findCurrentLive() {
   } catch (error) {
 
     console.error(
-      "❌ 쩡햄Live 라이브 검색 실패:"
+      "❌ 순대전사 라이브 검색 실패:"
     );
 
     console.error(
@@ -574,7 +574,7 @@ let liveTimer = null;
 function startLiveChecker() {
 
   console.log(
-    "🔎 쩡햄Live 라이브 자동 검색 시작"
+    "🔎 순대전사 라이브 자동 검색 시작"
   );
 
   console.log(
@@ -601,7 +601,7 @@ let newsTimer = null;
 function startNewsTimer() {
 
   console.log(
-    "⏱️ Google News → 뉴스봇 → 쩡햄Live"
+    "⏱️ Google News → 뉴스봇 → 순대전사"
   );
 
   console.log(
