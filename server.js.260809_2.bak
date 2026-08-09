@@ -1,3 +1,4 @@
+// 뉴스봇아이디로 방송 채팅에 뉴스 쏘기, 5분마다 방송검색
 import express from "express";
 import fetch from "node-fetch";
 import xml2js from "xml2js";
