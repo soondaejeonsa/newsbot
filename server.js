@@ -16,9 +16,40 @@ const PORT = process.env.PORT || 8080;
 const TARGET_CHANNEL_ID =
   "UChqJ-rp_I9NKwZOtzI11jNw";
 
+// ======================================================
 // Google News RSS
-const GOOGLE_NEWS_RSS =
-  "https://news.google.com/rss?hl=ko&gl=KR&ceid=KR:ko";
+// ======================================================
+
+const GOOGLE_NEWS_RSS = [
+
+  // 헤드라인
+  "https://news.google.com/rss?hl=ko&gl=KR&ceid=KR:ko",
+
+  // 대한민국
+  "https://news.google.com/rss/topics/CAAqIQgKIhtDQkFTRGdvSUwyMHZNRFp4WkRNU0FtdHZLQUFQAQ?hl=ko&gl=KR&ceid=KR:ko",
+
+  // 세계
+  "https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRGx1YlY4U0FtdHZHZ0pMVWlnQVAB?hl=ko&gl=KR&ceid=KR:ko",
+
+  // 지역 / 서울
+  "https://news.google.com/rss/topics/CAAqKAgKIiJDQkFTRXdvTkwyY3ZNVEZpWXpaM2FHNHhiaElDYTI4b0FBUAE?hl=ko&gl=KR&ceid=KR:ko",
+
+  // 비즈니스
+  "https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRGx6TVdZU0FtdHZHZ0pMVWlnQVAB?hl=ko&gl=KR&ceid=KR:ko",
+
+  // 과학 / 기술
+  "https://news.google.com/rss/topics/CAAqKAgKIiJDQkFTRXdvSkwyMHZNR1ptZHpWbUVnSnJieG9DUzFJb0FBUAE?hl=ko&gl=KR&ceid=KR:ko",
+
+  // 엔터테인먼트
+  "https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNREpxYW5RU0FtdHZHZ0pMVWlnQVAB?hl=ko&gl=KR&ceid=KR:ko",
+
+  // 스포츠
+  "https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRFp1ZEdvU0FtdHZHZ0pMVWlnQVAB?hl=ko&gl=KR&ceid=KR:ko",
+
+  // 건강
+  "https://news.google.com/rss/topics/CAAqIQgKIhtDQkFTRGdvSUwyMHZNR3QwTlRFU0FtdHZLQUFQAQ?hl=ko&gl=KR&ceid=KR:ko"
+
+];
 
 // 뉴스 전송 주기: 1분
 const NEWS_INTERVAL = 60 * 1000;
@@ -124,132 +155,193 @@ let liveActive = false;
 let lastLiveSearchTime = 0;
 
 // ======================================================
-// Google News 가져오기
+// Google News RSS 가져오기
 // ======================================================
 
 async function fetchGoogleNews() {
 
   try {
 
-    const response =
-      await fetch(
-        GOOGLE_NEWS_RSS,
-        {
-          headers: {
-            "User-Agent":
-              "Mozilla/5.0"
+    // 9개 RSS를 동시에 가져오기
+    const results = await Promise.all(
+      GOOGLE_NEWS_RSS.map(async (url) => {
+
+        try {
+
+          const response =
+            await fetch(url, {
+              headers: {
+                "User-Agent":
+                  "Mozilla/5.0"
+              }
+            });
+
+          if (!response.ok) {
+
+            console.error(
+              `❌ RSS 오류 ${response.status}: ${url}`
+            );
+
+            return [];
+
           }
+
+          const xml =
+            await response.text();
+
+          const result =
+            await parser.parseStringPromise(
+              xml
+            );
+
+          let items =
+            result?.rss?.channel?.item || [];
+
+          if (!Array.isArray(items)) {
+            items = [items];
+          }
+
+          return items;
+
+        } catch (error) {
+
+          console.error(
+            "❌ RSS 가져오기 실패:",
+            error.message
+          );
+
+          return [];
+
         }
-      );
 
-    if (!response.ok) {
+      })
+    );
 
-      throw new Error(
-        `Google News RSS 오류: ${response.status}`
-      );
+    // ==================================================
+    // 9개 RSS 합치기
+    // ==================================================
 
-    }
+    const allItems =
+      results.flat();
 
-    const xml =
-      await response.text();
+    // ==================================================
+    // 뉴스 정보 정리
+    // ==================================================
 
-    const result =
-      await parser.parseStringPromise(
-        xml
-      );
+    const newsMap =
+      new Map();
 
-    let items =
-      result?.rss?.channel?.item || [];
+    for (
+      const item of allItems
+    ) {
 
-    if (!Array.isArray(items)) {
-      items = [items];
-    }
+      if (
+        !item ||
+        !item.title
+      ) {
+        continue;
+      }
 
-    const news =
-      items
-        .filter(
-          item =>
-            item &&
-            item.title
-        )
-        .map(item => {
+      let title =
+        item.title;
 
-          let title =
-            item.title;
+      let link = "";
 
-          let link = "";
+      if (
+        typeof item.link ===
+        "string"
+      ) {
 
-          if (
-            typeof item.link ===
-            "string"
-          ) {
+        link =
+          item.link;
 
-            link =
-              item.link;
+      } else if (
+        item.link?._
+      ) {
 
-          } else if (
-            item.link?._
-          ) {
+        link =
+          item.link._;
 
-            link =
-              item.link._;
+      }
 
-          }
+      // --------------------------------------------
+      // 언론사
+      // --------------------------------------------
 
-          // --------------------------------------------
-          // 제목에서 언론사 분리
-          // --------------------------------------------
+      let source = "";
 
-          let source = "";
+      if (
+        title.includes(" - ")
+      ) {
 
-          if (
-            title.includes(" - ")
-          ) {
+        const parts =
+          title.split(" - ");
 
-            const parts =
-              title.split(" - ");
+        source =
+          parts
+            .pop()
+            .trim();
 
-            source =
-              parts
-                .pop()
-                .trim();
+        title =
+          parts
+            .join(" - ")
+            .trim();
 
-            title =
-              parts
-                .join(" - ")
-                .trim();
+      }
 
-          }
+      // --------------------------------------------
+      // 뉴스 ID
+      // --------------------------------------------
 
-          // --------------------------------------------
-          // 뉴스 고유 ID
-          // --------------------------------------------
+      const id =
+        item.guid ||
+        link ||
+        `${title}|${source}`;
 
-          const id =
-            item.guid ||
-            link ||
-            `${title}|${source}`;
+      // --------------------------------------------
+      // 중복 제거
+      // --------------------------------------------
 
-          return {
+      if (
+        !newsMap.has(id)
+      ) {
+
+        newsMap.set(
+          id,
+          {
             id,
             title,
             source,
             link
-          };
+          }
+        );
 
-        });
+      }
+
+    }
+
+    const news =
+      Array.from(
+        newsMap.values()
+      );
+
+    console.log(
+      `📰 Google News: RSS ${GOOGLE_NEWS_RSS.length}개 / 뉴스 ${news.length}개`
+    );
 
     return news;
 
   } catch (error) {
 
     console.error(
-      "❌ Google News 가져오기 실패:",
+      "❌ Google News 전체 가져오기 실패:",
       error.message
     );
 
     return [];
+
   }
+
 }
 
 // ======================================================
