@@ -340,10 +340,13 @@ async function fetchGoogleNews() {
       // 뉴스 ID
       // --------------------------------------------
 
+      //const id =
+        //item.guid ||
+        //link ||
+        //`${title}|${source}`;
+
       const id =
-        item.guid ||
-        link ||
-        `${title}|${source}`;
+  `${title.trim()}|${source.trim()}`;
 
       // --------------------------------------------
       // 중복 제거
