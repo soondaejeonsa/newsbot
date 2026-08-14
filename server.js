@@ -568,7 +568,15 @@ async function findCurrentLive() {
       console.log(
         "💬 Live Chat ID 확인 완료"
       );
+
+      // 새 방송 시작 → 이전 방송의 오류 상태 초기화
+      chatPermissionError = false;
+      quotaExceeded = false;
     
+      console.log(
+        "🔄 새 방송 시작 → 채팅 오류 상태 초기화"
+      );
+      
       // 새 방송이 시작되면
       // 이전 방송에서 보낸 뉴스 기록 초기화
       sentNews.clear();
