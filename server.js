@@ -772,19 +772,12 @@ async function sendYouTubeChat(message) {
     // --------------------------------------------
 
     const liveEnded =
-      lowerMessage.includes(
-        "live chat has ended"
-      ) ||
-      lowerMessage.includes(
-        "live chat not found"
-      ) ||
-      lowerMessage.includes(
-        "video is no longer live"
-      ) ||
-      lowerMessage.includes(
-        "livechatid"
-      );
-
+      lowerMessage.includes("live chat has ended") ||
+      lowerMessage.includes("live chat not found") ||
+      lowerMessage.includes("video is no longer live") ||
+      lowerMessage.includes("livechatnotfound") ||
+      lowerMessage.includes("livechatid is not available");
+    
     if (liveEnded) {
 
       console.log(
