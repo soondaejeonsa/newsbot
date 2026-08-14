@@ -204,6 +204,9 @@ let quotaExceeded = false;
 // 라이브가 없을 때 마지막 검색 시간
 let lastLiveSearchTime = 0;
 
+// 채팅 쓰기 권한
+let chatPermissionError = false;
+
 // ======================================================
 // Google News RSS 가져오기
 // ======================================================
@@ -635,6 +638,14 @@ async function sendYouTubeChat(message) {
     );
     return false;
   }
+
+  // 채팅 쓰기 권한 없음
+  if (chatPermissionError) {
+    console.log(
+      "⛔ YouTube 채팅 쓰기 권한 없음 → 전송을 건너뜁니다."
+    );
+    return false;
+  }
   
   if (!youtube) {
 
@@ -729,13 +740,28 @@ async function sendYouTubeChat(message) {
     
       return false;
     }
+
+    // --------------------------------------------
+    // YouTube 채팅 쓰기 권한 없음
+    // --------------------------------------------
+    
+    if (
+      lowerMessage.includes("does not have permission") ||
+      lowerMessage.includes("you don't have permission")
+    ) {
+    
+      chatPermissionError = true;
+    
+      console.error(
+        "🚫 YouTube 채팅 쓰기 권한 없음 → 이후 채팅 API 호출 중단"
+      );
+    
+      return false;
+    }
     
     // --------------------------------------------
     // 방송 종료 감지
     // --------------------------------------------
-
-    const lowerMessage =
-      errorMessage.toLowerCase();
 
     const liveEnded =
       lowerMessage.includes(
