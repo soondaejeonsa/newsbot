@@ -198,6 +198,9 @@ let liveActive = false;
 // 뉴스 채팅 전송 일시정지 여부
 let newsPaused = false;
 
+// YouTube API quota 초과 상태
+let quotaExceeded = false;
+
 // 라이브가 없을 때 마지막 검색 시간
 let lastLiveSearchTime = 0;
 
@@ -625,7 +628,14 @@ function resetLive() {
 // ======================================================
 
 async function sendYouTubeChat(message) {
-
+  // quota 초과 상태에서는 YouTube API 호출 자체를 하지 않음
+  if (quotaExceeded) {
+    console.log(
+      "⛔ YouTube API quota 초과 상태 → 채팅 전송을 건너뜁니다."
+    );
+    return false;
+  }
+  
   if (!youtube) {
 
     console.error(
@@ -699,6 +709,27 @@ async function sendYouTubeChat(message) {
       errorMessage
     );
 
+    // --------------------------------------------
+    // YouTube API quota 초과
+    // --------------------------------------------
+    
+    const lowerMessage =
+      errorMessage.toLowerCase();
+    
+    if (
+      lowerMessage.includes("exceeded your quota") ||
+      lowerMessage.includes("quota")
+    ) {
+    
+      quotaExceeded = true;
+    
+      console.error(
+        "🚫 YouTube API quota 초과 → 이후 채팅 API 호출 중단"
+      );
+    
+      return false;
+    }
+    
     // --------------------------------------------
     // 방송 종료 감지
     // --------------------------------------------
