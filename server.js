@@ -186,18 +186,40 @@ app.get("/reset", async (req, res) => {
   );
 
   // ==================================================
-  // 현재 라이브 정보 초기화
+  // 현재 라이브가 이미 있으면 유지
   // ==================================================
 
-  resetLive();
+  if (currentLiveChatId) {
+
+    console.log(
+      "🎥 현재 라이브가 이미 연결되어 있습니다."
+    );
+
+    res.send(`
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      🔄 뉴스 전송 기록이 초기화되었습니다.<br>
+      🎥 현재 라이브 연결은 유지됩니다.<br>
+      📰 뉴스 전송을 처음부터 다시 시작합니다.
+    `);
+
+    return;
+  }
 
   // ==================================================
-  // 현재 방송 즉시 다시 검색
+  // 현재 라이브가 없으면 자동 검색 방식으로 검색
   // ==================================================
+
+  console.log(
+    "🔎 /reset → 현재 라이브가 없어 라이브 검색을 시도합니다."
+  );
 
   let liveFound = false;
 
   try {
+
+    // /reset에서는 즉시 한 번 검색할 수 있도록
+    // 검색 제한 시간을 초기화
+    lastLiveSearchTime = 0;
 
     const liveChatId =
       await findCurrentLive();
@@ -207,7 +229,7 @@ app.get("/reset", async (req, res) => {
       liveFound = true;
 
       console.log(
-        "✅ /reset → 현재 라이브를 다시 찾았습니다."
+        "✅ /reset → 현재 라이브를 찾았습니다."
       );
 
     } else {
@@ -221,7 +243,7 @@ app.get("/reset", async (req, res) => {
   } catch (error) {
 
     console.error(
-      "❌ /reset → 라이브 재검색 실패:",
+      "❌ /reset → 라이브 검색 실패:",
       error.message
     );
 
@@ -233,11 +255,13 @@ app.get("/reset", async (req, res) => {
 
   res.send(`
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    🔄 뉴스 전송 기록 및 라이브 정보가 초기화되었습니다.<br>
+
+    🔄 뉴스 전송 기록이 초기화되었습니다.<br>
+
     ${
       liveFound
-        ? "✅ 현재 라이브를 다시 찾았습니다. 뉴스 전송을 시작합니다."
-        : "ℹ️ 현재 라이브가 없습니다."
+        ? "✅ 현재 라이브를 찾았습니다. 뉴스 전송을 시작합니다."
+        : "ℹ️ 현재 라이브가 없습니다. 자동 감시가 계속됩니다."
     }
   `);
 
@@ -478,16 +502,18 @@ async function findCurrentLive() {
 
   const now = Date.now();
 
-  if (
-    now - lastLiveSearchTime <
-    NO_LIVE_CHECK_INTERVAL
-  ) {
+if (
+  now - lastLiveSearchTime <
+  NO_LIVE_CHECK_INTERVAL
+) {
 
-    return currentLiveChatId;
+  console.log(
+    "⏳ 라이브 검색 간격 15분 미만 → 검색하지 않습니다."
+  );
 
-  }
+  return currentLiveChatId;
 
-  lastLiveSearchTime = now;
+}
 
   try {
 
@@ -495,6 +521,8 @@ async function findCurrentLive() {
       "🔎 순대전사 현재 라이브 검색..."
     );
 
+    lastLiveSearchTime = now;
+    
     // --------------------------------------------
     // 순대전사 채널에서 LIVE 영상 검색
     // --------------------------------------------
