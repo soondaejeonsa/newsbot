@@ -1071,30 +1071,54 @@ function startLiveChecker() {
     "🔎 라이브가 없을 때만 15분마다 검색"
   );
 
-  // 서버 시작 직후 검색
+  // 서버 시작 직후 검색 가능
   lastLiveSearchTime = 0;
 
-  findCurrentLive();
+  findCurrentLive().catch(error => {
+
+    console.error(
+      "❌ 서버 시작 라이브 검색 실패:",
+      error.message
+    );
+
+  });
 
   // --------------------------------------------
-  // 라이브가 없을 때만 실제 검색
+  // 라이브가 없을 때만 15분마다 검색
   // --------------------------------------------
 
   liveTimer =
-    setInterval(
-      async () => {
+    setInterval(async () => {
 
-        if (
-          !currentLiveChatId
-        ) {
+      if (!currentLiveChatId) {
+
+        console.log(
+          "⏰ 라이브 없음 → 15분 라이브 검색"
+        );
+
+        try {
 
           await findCurrentLive();
 
+        } catch (error) {
+
+          console.error(
+            "❌ 자동 라이브 검색 실패:",
+            error.message
+          );
+
         }
 
-      },
-      NO_LIVE_CHECK_INTERVAL
-    );
+      } else {
+
+        console.log(
+          "🎥 현재 라이브 진행 중 → 라이브 검색하지 않음"
+        );
+
+      }
+
+    }, NO_LIVE_CHECK_INTERVAL);
+
 }
 
 // ======================================================
