@@ -52,7 +52,7 @@ const GOOGLE_NEWS_RSS = [
 ];
 
 // 뉴스 전송 주기: 1분
-const NEWS_INTERVAL = 60 * 1000;
+const NEWS_INTERVAL = 2 * 60 * 1000;
 
 // 라이브가 없을 때만 라이브 검색
 // 15분 = 하루 최대 96회
