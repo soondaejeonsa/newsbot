@@ -161,11 +161,25 @@ app.get("/play", (req, res) => {
 
   newsPaused = false;
 
+  // 채팅 권한 오류 상태 초기화
+  chatPermissionError = false;
+
+  // quota 오류는 여기서 초기화하지 않음
+  // quota는 별도의 문제이므로 유지
+
   console.log(
     "▶️ 뉴스 채팅 전송 재개"
   );
 
-  res.send(`<meta name="viewport" content="width=device-width, initial-scale=1.0">▶️ 뉴스 채팅 전송이 재개되었습니다.`);
+  console.log(
+    "🔄 채팅 권한 오류 상태 초기화"
+  );
+
+  res.send(`
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    ▶️ 뉴스 채팅 전송이 재개되었습니다.<br>
+    🔄 채팅 권한 오류 상태도 초기화되었습니다.
+  `);
 
 });
 
