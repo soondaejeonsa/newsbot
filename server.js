@@ -51,7 +51,7 @@ const GOOGLE_NEWS_RSS = [
 
 ];
 
-// 뉴스 전송 주기: 1분
+// 뉴스 전송 주기: 2분
 const NEWS_INTERVAL = 2 * 60 * 1000;
 
 // 라이브가 없을 때만 라이브 검색
@@ -186,7 +186,6 @@ app.get("/play", (req, res) => {
 // ======================================================
 // 뉴스 전송 기록 초기화
 // ======================================================
-
 app.get("/reset", async (req, res) => {
 
   // ==================================================
@@ -200,40 +199,31 @@ app.get("/reset", async (req, res) => {
   );
 
   // ==================================================
-  // 현재 라이브가 이미 있으면 유지
-  // ==================================================
-
-  if (currentLiveChatId) {
-
-    console.log(
-      "🎥 현재 라이브가 이미 연결되어 있습니다."
-    );
-
-    res.send(`
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      🔄 뉴스 전송 기록이 초기화되었습니다.<br>
-      🎥 현재 라이브 연결은 유지됩니다.<br>
-      📰 뉴스 전송을 처음부터 다시 시작합니다.
-    `);
-
-    return;
-  }
-
-  // ==================================================
-  // 현재 라이브가 없으면 자동 검색 방식으로 검색
+  // 기존 라이브 연결 강제 초기화
   // ==================================================
 
   console.log(
-    "🔎 /reset → 현재 라이브가 없어 라이브 검색을 시도합니다."
+    "🔄 기존 라이브 연결을 초기화합니다."
   );
+
+  currentVideoId = null;
+  currentLiveChatId = null;
+  liveActive = false;
+
+  // 라이브 검색 제한시간 초기화
+  lastLiveSearchTime = 0;
+
+  // ==================================================
+  // 현재 라이브 즉시 검색
+  // ==================================================
 
   let liveFound = false;
 
   try {
 
-    // /reset에서는 즉시 한 번 검색할 수 있도록
-    // 검색 제한 시간을 초기화
-    lastLiveSearchTime = 0;
+    console.log(
+      "🔎 /reset → 현재 라이브를 강제로 다시 검색합니다."
+    );
 
     const liveChatId =
       await findCurrentLive();
@@ -271,6 +261,7 @@ app.get("/reset", async (req, res) => {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     🔄 뉴스 전송 기록이 초기화되었습니다.<br>
+    🔄 기존 라이브 연결도 초기화했습니다.<br>
 
     ${
       liveFound
@@ -1148,7 +1139,7 @@ function startNewsTimer() {
   );
 
   console.log(
-    "⏱️ 뉴스 전송 주기: 1분"
+    "⏱️ 뉴스 전송 주기: 2분"
   );
 
   // 서버 시작 직후 확인
