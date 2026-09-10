@@ -660,15 +660,40 @@ async function fetchGoogleNews() {
         newsMap.values()
       );
 
+    // ==================================================
+    // 제외할 언론사
+    // ==================================================
+    
+    const EXCLUDED_SOURCES = [
+      // "JTBC",
+      // "MBC",
+      "한겨레"
+    ];
+    
+    const filteredNews =
+      news.filter(news => {
+        return !EXCLUDED_SOURCES.some(source =>
+          news.source.includes(source)
+        );
+      });
+    
     console.log(
-      `📰 Google News: RSS ${GOOGLE_NEWS_RSS.length}개 / 성공 RSS ${successfulResults.length}개 / 뉴스 ${news.length}개`
+      `🚫 제외 언론사 필터: ${news.length - filteredNews.length}개 제외`
     );
 
+    // console.log(
+      // `📰 Google News: RSS ${GOOGLE_NEWS_RSS.length}개 / 성공 RSS ${successfulResults.length}개 / 뉴스 ${news.length}개`
+    // );
+
+    console.log(
+      `📰 Google News: RSS ${GOOGLE_NEWS_RSS.length}개 / 성공 RSS ${successfulResults.length}개 / 전체 ${news.length}개 / 필터 후 ${filteredNews.length}개`
+    );
+    
     // ==================================================
     // 정상적으로 뉴스가 하나라도 있으면 캐시 갱신
     // ==================================================
 
-    if (
+    /* if (
       news.length > 0
     ) {
 
@@ -680,6 +705,20 @@ async function fetchGoogleNews() {
       );
 
       return news;
+    } */
+
+    if (
+      filteredNews.length > 0
+    ) {
+    
+      lastGoodNewsCache =
+        filteredNews;
+    
+      console.log(
+        `💾 Google News 캐시 갱신: ${filteredNews.length}개`
+      );
+    
+      return filteredNews;
     }
 
     // ==================================================
