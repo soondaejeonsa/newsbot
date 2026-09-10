@@ -1248,7 +1248,8 @@ async function sendLatestNews() {
   // --------------------------------------------
 
   let message =
-    `📰 ${news.title}`;
+    //`📰 ${news.title}`;
+    `🍖 ${news.title}`;
 
   if (news.source) {
 
