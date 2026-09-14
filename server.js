@@ -1233,17 +1233,17 @@ async function sendLatestNews() {
 
   if (!currentLiveChatId) {
 
-    //const liveChatId =
-      //await findCurrentLive();
+    const liveChatId =
+      await findCurrentLive();
 
-    //if (!liveChatId) {
+    if (!liveChatId) {
 
       console.log(
         "ℹ️ 라이브 방송이 없어 뉴스 전송을 건너뜁니다."
       );
 
       return;
-    //}
+    }
   }
 
   // --------------------------------------------
